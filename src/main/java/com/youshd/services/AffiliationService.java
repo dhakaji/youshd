@@ -31,7 +31,7 @@ public class AffiliationService {
 
     public OrderResponse placeOrder(User user, Product product, String affiliateLink) {
         double discount = 0;
-        if(affiliateLink != null && isFirstAffiliateOrder(affiliateLink)) {
+        if(affiliateLink != null && isEligibleForBigDiscount(affiliateLink)) {
             discount = 0.2;
         } else if(affiliateLink != null) discount = 0.1;
         Orders order = new Orders(user.getUserId(), affiliateLink, product.getProductId(), product.getPrice(), discount, OrderStatus.SUCCESS);
@@ -119,9 +119,11 @@ public class AffiliationService {
         return null;
     }
 
-    private boolean isFirstAffiliateOrder(String affiliateLink) {
+    private boolean isEligibleForBigDiscount(String affiliateLink) {
+        AffiliateLink affiliateLink1 = affiliateLinkRepository.findFirstByAffiliateLink(affiliateLink);
+        List<Orders> userOrders = orderRepository.findByUserId(affiliateLink1.getUserId());
         List<Orders> orderList = orderRepository.findByAffiliateLink(affiliateLink);
-        return orderList.size() == 0;
+        return userOrders.size() > 0 && userOrders.get(0).getAffiliateLink() == null && OrderStatus.SUCCESS.equals(userOrders.get(0).getOrderStatus()) && orderList.size() == 0;
     }
 
     public String getAffiliateLink(User user, Product product) {
